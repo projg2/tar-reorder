@@ -13,7 +13,12 @@ import sys, os, os.path
 import tempfile, shutil
 
 import tarfile
-import magic
+try:
+	import magic
+except ImportError:
+	have_magic = False
+else:
+	have_magic = True
 
 getopt	= OptionParser(
 		version		= '0.1.1',
@@ -39,8 +44,12 @@ elif len(args) > 1 and opts.out:
 	getopt.error('--output can be used with only one input file.')
 
 if opts.usemagic:
-	wizard = magic.open(magic.MAGIC_MIME | magic.MAGIC_COMPRESS)
-	wizard.load()
+	if have_magic:
+		wizard = magic.open(magic.MAGIC_MIME | magic.MAGIC_COMPRESS)
+		wizard.load()
+	else:
+		sys.stderr.write("Unable to import 'magic' module, assuming --nomagic.\n")
+		opts.usemagic = False
 
 class reorder_by:
 	type	= 1
