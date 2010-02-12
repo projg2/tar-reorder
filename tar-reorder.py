@@ -160,36 +160,45 @@ for fn in args:
 		# important fds get higher numbers.
 		tmpipe = os.pipe()
 
+		intar = tarfile.open(fn)
+		infmt = intar.format
+		inenc = intar.encoding
+		incls = intar.fileobj.__class__
+
 		if not opts.out:
 			tmpf = tempfile.NamedTemporaryFile(dir = getRealDir(fn), delete = False)
 			tmpfn = tmpf.name
 			debug(2, 'tempfile: %s' % tmpfn)
+
+			if incls is not file:
+				# sorry, bz2 doesn't like chaining, we need to open by fn
+				keepf = tmpf
+				tmpf = incls(tmpfn, 'wb')
+				keepf.close()
 		else:
+			# XXX: let user choose compression
 			tmpfn = opts.out
+			tmpf = incls(tmpfn, 'wb')
+		debug(2, 'using %s for output' % str(incls))
 
 		try:
-			intar = tarfile.open(fn)
-			infmt = intar.format
-			inenc = intar.encoding
-			if opts.out:
-				outtar = tarfile.open(tmpfn, mode = 'w', format = infmt, encoding = inenc)
-			else:
-				outtar = tarfile.open(fileobj = tmpf, mode = 'w', format = infmt, encoding = inenc)
-		except:
-			if not opts.out:
-				os.unlink(tmpfn)
-			raise
+			outtar = tarfile.open(fileobj = tmpf, mode = 'w', format = infmt, encoding = inenc)
 
-		try: # not critical
-			os.close(tmpipe[0])
-			os.close(tmpipe[1])
-		except:
-			pass
+			try: # not critical
+				os.close(tmpipe[0])
+				os.close(tmpipe[1])
+			except:
+				pass
 
-		try:
-			reorder(intar.getmembers(), reorder_by.type, intar, outtar, '*all*')
+			try:
+				reorder(intar.getmembers(), reorder_by.type, intar, outtar, '*all*')
+			except:
+				outtar.close()
+				raise
 		except:
+			tmpf.close()
 			os.unlink(tmpfn)
+			intar.close()
 			raise
 		else:
 			if opts.out:
@@ -200,8 +209,8 @@ for fn in args:
 		intar.close()
 		outtar.close()
 
+		tmpf.close()
 		if not opts.out:
-			tmpf.close()
 			shutil.move(tmpfn, fn)
 	except IOError as e:
 		if not opts.quiet:
