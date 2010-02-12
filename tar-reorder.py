@@ -169,10 +169,12 @@ for fn in args:
 
 		try:
 			intar = tarfile.open(fn)
+			infmt = intar.format
+			inenc = intar.encoding
 			if opts.out:
-				outtar = tarfile.open(tmpfn, mode = 'w')
+				outtar = tarfile.open(tmpfn, mode = 'w', format = infmt, encoding = inenc)
 			else:
-				outtar = tarfile.open(fileobj = tmpf, mode = 'w')
+				outtar = tarfile.open(fileobj = tmpf, mode = 'w', format = infmt, encoding = inenc)
 		except:
 			if not opts.out:
 				os.unlink(tmpfn)
