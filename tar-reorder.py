@@ -21,7 +21,7 @@ else:
 	have_magic = True
 
 getopt = OptionParser(
-		version		= '0.1.1',
+		version		= '0.2',
 		description	= 'Reorder and group files inside .tar archive by type',
 		usage		= 'usage: %prog [options] file1.tar ( -o outfile.tar | [file2.tar] [...] )'
 	)
@@ -60,11 +60,14 @@ class reorder_by:
 reorder_by_descs = [None, 'filetype', 'extensions', 'filenames', 'full paths']
 
 def debug(lv, msg):
+	""" Output debug message if debuglevel is appropriate. """
 	if opts.debug >= lv:
 		sys.stderr.write("-*- %s%s\n" % ('\t' * (lv - 1), msg))
 
 def reorder(inlist, crit, intar, outtar, key):
+	""" Perform the reorder of files in 'inlist' using criteria 'crit'. """
 	def copy(flist):
+		""" Copy files in 'flist' into new tarball. """
 		for f in flist:
 			if opts.verbose:
 				print f.name
@@ -149,9 +152,12 @@ for fn in args:
 				path = os.path.join(os.path.dirname(path), os.readlink(path))
 			return os.path.dirname(path)
 
-		# workaround for failpython bug
-		# something (tarfile? magic?) is replacing fd0 with pipe
-		# so make sure fd0 is nothing important
+		# * Workaround for Python bug *
+		# Something braindead (magic?) is replacing fd0 with pipe and then
+		# closing it, leaving us with empty fd0. If we open the tarfile then,
+		# it gets into fd0 and is replaced with mentioned pipe.
+		# Thus, we open a stray pipe to fill in the gap and make sure that
+		# important fds get higher numbers.
 		tmpipe = os.pipe()
 
 		if not opts.out:
