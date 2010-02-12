@@ -20,10 +20,10 @@ except ImportError:
 else:
 	have_magic = True
 
-getopt	= OptionParser(
+getopt = OptionParser(
 		version		= '0.1.1',
 		description	= 'Reorder and group files inside .tar archive by type',
-		usage		= 'usage: %prog [options] file1 ( -o outfile | [file2] [...] )'
+		usage		= 'usage: %prog [options] file1.tar ( -o outfile.tar | [file2.tar] [...] )'
 	)
 getopt.add_option('-v', '--verbose', action = 'store_true', dest = 'verbose', default = False,
 		help = "Print filenames as they are appended (like 'tar -v')")
@@ -55,7 +55,7 @@ class reorder_by:
 	type	= 1
 	ext		= 2
 	name	= 3
-	nomore	= 4
+	last	= 4
 
 reorder_by_descs = [None, 'filetype', 'extensions', 'filenames', 'full paths']
 
@@ -106,21 +106,21 @@ def reorder(inlist, crit, intar, outtar, key):
 			exts = []
 			name = f.name
 			while 1:
-				tmp = os.path.splitext(name)
-				name = tmp[0]
-				ext = tmp[1]
-				if (ext):
+				(name, ext) = os.path.splitext(name)
+				if ext:
 					exts.append(ext)
 				else:
 					break
 
-			# NOTE: we really want them reversed, so that .tar.bz2 go near other .bz2, etc.
+			# NOTE: we indeed do get the extension list reversed
+			# (i.e. '.tar.bz2' comes as '.bz2.tar') and it is fine
+			# this way we keep '.bz2's near other '.bz2's etc.
 			key = ''.join(exts)
 
 		if crit == reorder_by.name:
 			key	= os.path.split(f.name)[1]
 
-		if crit == reorder_by.nomore:
+		if crit == reorder_by.last:
 			before.append(f)
 
 		if key is not None:
